@@ -56,14 +56,25 @@ export const CameraQRScanner: React.FC<CameraQRScannerProps> = ({
     setCameraError('');
 
     try {
-      const html5QrCode = new Html5Qrcode(READER_ELEMENT_ID);
+      const html5QrCode = new Html5Qrcode(READER_ELEMENT_ID, {
+        experimentalFeatures: {
+          useBarCodeDetectorIfSupported: true
+        }
+      } as any);
       scannerInstanceRef.current = html5QrCode;
 
       await html5QrCode.start(
         { facingMode: facingMode },
         {
-          fps: 15,
-          qrbox: { width: 250, height: 250 },
+          fps: 10,
+          qrbox: (viewfinderWidth, viewfinderHeight) => {
+            const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+            const qrboxSize = Math.floor(minEdge * 0.85);
+            return {
+              width: Math.max(220, qrboxSize),
+              height: Math.max(220, qrboxSize)
+            };
+          },
           aspectRatio: 1.0
         },
         (decodedText) => {
@@ -324,6 +335,26 @@ export const CameraQRScanner: React.FC<CameraQRScannerProps> = ({
 
             <div className="flex items-center justify-between text-[11px] text-slate-400 px-1">
               <span>Serial is printed beneath the QR sticker.</span>
+            </div>
+
+            {/* Quick Demo Test Buttons */}
+            <div className="pt-2 border-t border-slate-800">
+              <div className="text-[10px] text-slate-500 uppercase font-bold tracking-wider mb-1.5 flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-amber-400" />
+                <span>Quick Test Serials (Instant Click)</span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {['GA-CF-202611-B04-0012', 'GA-CF-202611-B01-0001', 'GA-CF-202611-B01-0002'].map(s => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => handleDetectedCode(s)}
+                    className="px-2 py-1 bg-slate-800 hover:bg-blue-900/60 hover:border-blue-500 border border-slate-700 rounded-lg text-[10px] font-mono text-slate-300 hover:text-white transition-all cursor-pointer"
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
             </div>
           </form>
         </div>
