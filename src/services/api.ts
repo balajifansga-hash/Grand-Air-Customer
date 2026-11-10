@@ -165,7 +165,9 @@ export const CustomerApiService = {
     certificate?: ScannedUnitCertificate;
     message?: string;
   }> {
-    const cleanSerial = serialNumber.trim().toUpperCase();
+    const raw = String(serialNumber || '').trim();
+    const match = raw.match(/GA-[A-Z0-9]{2,4}-\d{6}-B\d{2,4}-\d{3,5}/i);
+    const cleanSerial = match ? match[0].toUpperCase() : raw.toUpperCase();
 
     // 1. Try backend API verification
     try {
@@ -241,7 +243,9 @@ export const CustomerApiService = {
     message: string;
     data?: any;
   }> {
-    const cleanSerial = serialNumber.trim().toUpperCase();
+    const raw = String(serialNumber || '').trim();
+    const match = raw.match(/GA-[A-Z0-9]{2,4}-\d{6}-B\d{2,4}-\d{3,5}/i);
+    const cleanSerial = match ? match[0].toUpperCase() : raw.toUpperCase();
 
     // 1. Try registering through Backend API
     try {

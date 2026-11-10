@@ -82,26 +82,49 @@ export const CameraQRScanner: React.FC<CameraQRScannerProps> = ({
     }
   };
 
+  const extractSerialFromScannedText = (raw: string): string => {
+    if (!raw) return '';
+    const text = raw.trim();
+
+    // 1. Direct Regex match for Grand Air Serial (GA-CF-YYYYMM-BXX-XXXX) anywhere in text
+    const serialMatch = text.match(/GA-[A-Z0-9]{2,4}-\d{6}-B\d{2,4}-\d{3,5}/i);
+    if (serialMatch) {
+      return serialMatch[0].toUpperCase();
+    }
+
+    // 2. Try JSON parsing
+    try {
+      const jsonStart = text.indexOf('{');
+      const jsonEnd = text.lastIndexOf('}');
+      if (jsonStart !== -1 && jsonEnd > jsonStart) {
+        const parsed = JSON.parse(text.slice(jsonStart, jsonEnd + 1));
+        const candidate = parsed.serialNumber || parsed.sn || parsed.serial || parsed.id;
+        if (candidate) {
+          const cMatch = String(candidate).match(/GA-[A-Z0-9]{2,4}-\d{6}-B\d{2,4}-\d{3,5}/i);
+          return cMatch ? cMatch[0].toUpperCase() : String(candidate).trim().toUpperCase();
+        }
+      }
+    } catch {}
+
+    // 3. Try URL parsing
+    try {
+      const url = new URL(text);
+      const param = url.searchParams.get('verify') || url.searchParams.get('sn') || url.searchParams.get('serial');
+      if (param) {
+        const pMatch = param.match(/GA-[A-Z0-9]{2,4}-\d{6}-B\d{2,4}-\d{3,5}/i);
+        return pMatch ? pMatch[0].toUpperCase() : param.trim().toUpperCase();
+      }
+    } catch {}
+
+    return text.toUpperCase();
+  };
+
   const handleDetectedCode = async (code: string) => {
     if (isProcessing) return;
     setIsProcessing(true);
     await stopCamera();
 
-    let extractedSerial = code.trim();
-    try {
-      if (code.includes('{') && code.includes('}')) {
-        const parsed = JSON.parse(code);
-        if (parsed.serialNumber) extractedSerial = parsed.serialNumber;
-        else if (parsed.sn) extractedSerial = parsed.sn;
-        else if (parsed.serial) extractedSerial = parsed.serial;
-      } else if (code.includes('verify=') || code.includes('sn=')) {
-        const url = new URL(code);
-        extractedSerial = url.searchParams.get('verify') || url.searchParams.get('sn') || extractedSerial;
-      }
-    } catch {
-      // use raw text
-    }
-
+    const extractedSerial = extractSerialFromScannedText(code);
     onScanSuccess(extractedSerial);
   };
 
