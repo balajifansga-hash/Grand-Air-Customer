@@ -1,6 +1,18 @@
 import { CustomerProfile, ScannedUnitCertificate, EmailRecord } from '../types';
 
-const API_BASE = 'http://localhost:5000/api';
+const getApiBase = (): string => {
+  const env = (import.meta as any).env;
+  if (env && env.VITE_API_URL) {
+    const customUrl = String(env.VITE_API_URL).trim();
+    return customUrl.replace(/\/$/, '') + (customUrl.endsWith('/api') ? '' : '/api');
+  }
+  if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+    return 'http://localhost:5000/api';
+  }
+  return 'https://grand-air-backend.onrender.com/api';
+};
+
+const API_BASE = getApiBase();
 const STORAGE_PROFILE_KEY = 'grand_air_customer_profile';
 const STORAGE_REGISTERED_UNITS = 'grand_air_customer_registered_units';
 
